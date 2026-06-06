@@ -23,12 +23,13 @@ def main(page: ft.Page):
     # Переменная для хранения номера текущего активного экрана со звуком
     current_active_screen = None
 
-    # Карта настроек для каждого экрана: (Имя файла, Текст кнопки старта, Текст заголовка экрана)
+    # Карта настроек для каждого экрана: (Имя файла, Текст кнопки старта, Текст заголовка экрана, Зациклить?)
     screen_audio_configs = {
-        1: ("voda.mp3", "Слушать волны", "Море, всегда звучит прекрасно!"),
-        2: ("les_audio.mp3", "Звучит Лес", "Лес, поздний вечер и никакой суеты."),
-        3: ("Gorod.mp3", "В Город", "Город - всегда живёт"),
-        4: ("koster_nicht.mp3", "Твои Ночь и Костёр", "Ночю Костёр можно слушать бесконечно!")
+        1: ("voda.mp3", "Слушать волны", "Море, всегда звучит прекрасно!", True),
+        2: ("les_audio.mp3", "Твои Лес", "Лес всегда звучит прекрасно!", True),
+        3: ("Gorod.mp3", "В Город", "Город всегда живёт!", True),
+        4: ("koster_nicht.mp3", "Твои Ночь и Костёр", "Ночью Костёр особенно прекрасен", True),
+        5: ("meditaciya.mp3", "Медитация", "Вам не о чем беспокоится!", True)  # ИСПРАВЛЕНИЕ: Добавлен 5-й экран с зацикливанием (True)
     }
 
     # Универсальная функция управления аудиозаписью
@@ -38,13 +39,19 @@ def main(page: ft.Page):
         if not config:
             return
 
-        file_name, default_text, _ = config
+        file_name, default_text, _, loop = config
         audio_path = os.path.abspath(file_name)
 
         if not is_playing:
             try:
                 mixer.music.load(audio_path)
-                mixer.music.play()  # Воспроизведение звука внутри приложения
+                
+                # ИСПРАВЛЕНИЕ: Если для экрана включен loop=True, зацикливаем (-1)
+                if loop:
+                    mixer.music.play(loops=-1)  # Бесконечный повтор файла
+                else:
+                    mixer.music.play()          # Обычное одиночное воспроизведение
+                    
                 e.control.text = "Остановить"
                 is_playing = True
                 current_active_screen = screen_num
@@ -60,7 +67,7 @@ def main(page: ft.Page):
     # Синхронная функция отрисовки ГЛАВНОГО ЭКРАНА
     def show_main_screen(e=None):
         nonlocal is_playing, current_active_screen
-        # Если музыка играет, глушим её при возврате на главную страницу
+        # Если музыка играет (даже зацикленная), глушим её при возврате на главную страницу
         if is_playing:
             mixer.music.stop()
             is_playing = False 
@@ -75,14 +82,13 @@ def main(page: ft.Page):
                 color="#FFFFFF",
                 text_align=ft.TextAlign.CENTER
             ),
-            # Обновленные кнопки переходов по экранам согласно ТЗ
             ft.FilledButton("Волны Моря", on_click=lambda _: show_sub_screen(1), style=btn_style),
             ft.FilledButton("Лес", on_click=lambda _: show_sub_screen(2), style=btn_style),
             ft.FilledButton("Город", on_click=lambda _: show_sub_screen(3), style=btn_style),
             ft.FilledButton("Костёр ночью ", on_click=lambda _: show_sub_screen(4), style=btn_style),
-            ft.FilledButton("5-ый экран", on_click=lambda _: show_sub_screen(5), style=btn_style),
+            ft.FilledButton("Медитация", on_click=lambda _: show_sub_screen(5), style=btn_style),  # ИСПРАВЛЕНИЕ: Кнопка 5-го экрана переименована
             ft.Text(
-                "Разработчик: компания WebtestersCompany - https://profitest.h1n.ru", 
+                "Разработчик: компания WebtestersCompany - https://h1n.ru", 
                 size=9, 
                 weight="bold", 
                 color="#FFFFFF"
@@ -103,7 +109,10 @@ def main(page: ft.Page):
 
         # Определяем заголовок текущего экрана на основе конфигурации
         config = screen_audio_configs.get(screen_num)
-        screen_title = config[2] if config else f"Экран номер {screen_num}"
+        if config:
+            _, _, screen_title, _ = config
+        else:
+            screen_title = f"Экран номер {screen_num}"
         
         screen_controls = [
             ft.Text(
@@ -119,9 +128,9 @@ def main(page: ft.Page):
             )
         ]
         
-        # Динамическое добавление интерактивной аудио-кнопки для экранов 1, 2, 3 и 4
+        # Динамическое добавление интерактивной аудио-кнопки для экранов
         if screen_num in screen_audio_configs:
-            file_name, default_text, _ = screen_audio_configs[screen_num]
+            file_name, default_text, _, _ = screen_audio_configs[screen_num]
             
             # Если музыка запущена именно на этом экране, кнопка должна сразу показывать статус "Остановить"
             current_btn_text = "Остановить" if (is_playing and current_active_screen == screen_num) else default_text
@@ -139,5 +148,5 @@ def main(page: ft.Page):
     # Стартовый запуск главного экрана
     show_main_screen()
 
-# Используем ft.run(main) вместо устаревшего ft.app
+# Запускаем приложение через стабильный метод ft.run()
 ft.run(main)
