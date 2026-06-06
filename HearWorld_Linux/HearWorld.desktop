@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=HearWorld
+Comment=Звуки окружающего мира рядом
+Exec=/home/oleg/flet_project/HearWorld_Linux/run.sh
+Icon=media-playback-start
+Terminal=false
+Categories=Utility;AudioVideo;
